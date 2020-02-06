@@ -1,0 +1,16 @@
+!.gitignore
+*.egg*
+*.pyc
+*.swo
+*.swp
+*~
+.project
+.pydevproject
+.ropeproject
+.tox
+.idea
+.venv
+AUTHORS
+Authors
+build-stamp
+dist/*
