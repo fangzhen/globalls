@@ -1,11 +1,8 @@
 #! /bin/python
 import logging
-import subprocess
 import re
-from urllib.parse import unquote, urlparse
-from pygls.capabilities import *
 from pygls.server import LanguageServer
-from pygls.lsp import *
+from lsprotocol.types import *
 from pygls import uris
 
 from globalls import utils
@@ -13,13 +10,13 @@ from globalls import utils
 ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 logger = logging
-server = LanguageServer()
+server = LanguageServer("globalls", "0.1");
 
 
-@server.feature(COMPLETION)
+@server.feature(TEXT_DOCUMENT_COMPLETION)
 def completions(params: CompletionParams):
     """Returns completion items."""
-    doc = server.lsp.workspace.get_document(params.textDocument.uri)
+    doc = server.workspace.get_document(params.text_document.uri)
     token = doc.word_at_position(params.position)
     completions = utils.invoke_global(server, "-c %s" % token)
     return CompletionList(
@@ -28,7 +25,7 @@ def completions(params: CompletionParams):
 
 
 def find_tag(params, global_args):
-    doc = server.lsp.workspace.get_document(params.text_document.uri)
+    doc = server.workspace.get_document(params.text_document.uri)
     tag = doc.word_at_position(params.position)
     defs = utils.invoke_global(
         server, "%s -a --color=always --result=grep %s" % (
@@ -50,13 +47,13 @@ def find_tag(params, global_args):
     return locations
 
 
-@server.feature(DEFINITION)
+@server.feature(TEXT_DOCUMENT_DEFINITION)
 def definition(params: DefinitionParams):
     """Find definitions."""
     return find_tag(params, "-d")
 
 
-@server.feature(REFERENCES)
+@server.feature(TEXT_DOCUMENT_REFERENCES)
 def reference(params: ReferenceParams):
     """Find references."""
     return find_tag(params, "-r")
@@ -65,7 +62,7 @@ def reference(params: ReferenceParams):
 @server.feature(TEXT_DOCUMENT_DID_SAVE)
 def test_document_did_save(params: DidSaveTextDocumentParams):
     """Update global db when file saved."""
-    path = uris.to_fs_path(params.textDocument.uri)
+    path = uris.to_fs_path(params.text_document.uri)
     utils.invoke_global(server, "--single-update %s" % path)
 
 
